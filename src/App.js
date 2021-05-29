@@ -1,5 +1,9 @@
 import React, { Component } from "react";
 import PermIdentityIcon from "@material-ui/icons/PermIdentity";
+
+import InputAdornment from "@material-ui/core/InputAdornment";
+import SearchIcon from "@material-ui/icons/Search";
+
 import ForumIcon from "@material-ui/icons/Forum";
 import VisibilityIcon from "@material-ui/icons/Visibility";
 import VisibilityOffIcon from "@material-ui/icons/VisibilityOff";
@@ -71,6 +75,9 @@ class App extends Component {
       copiedText: "",
       usertext: "",
       copied: false,
+      disable: false,
+      search: "",
+      searchuser: "",
     };
     this.addClassroom = this.addClassroom.bind(this);
   }
@@ -119,7 +126,7 @@ class App extends Component {
             (this.state.name === "") |
             (this.state.room === "")
           )
-            this.setState({ isLoggedIn: false, isavail: true });
+            this.setState({ isLoggedIn: false });
           else {
             console.log("update" + this.state.room);
             this.client = new W3CWebSocket(
@@ -157,7 +164,7 @@ class App extends Component {
             this.state.room.includes(" ") |
             (this.state.room === "")
           )
-            this.setState({ isLoggedIn: false, isavail: true });
+            this.setState({ isLoggedIn: false });
           else {
             this.state.database.ref("chatroom").push({
               name: this.state.room,
@@ -198,7 +205,7 @@ class App extends Component {
         this.setState((state) => ({
           messages: [...state.messages, snapshot.val()],
         }));
-        console.log("msg " +snapshot.val());
+        console.log("msg " + snapshot.val());
       });
 
     //chatrooms add to state
@@ -214,6 +221,7 @@ class App extends Component {
       this.state.database
         .ref()
         .child("chatroom")
+        .orderByChild("name")
         .on("child_added", (snapshot) => {
           this.setState((state) => ({
             rooms: [...state.rooms, snapshot.val()],
@@ -247,6 +255,7 @@ class App extends Component {
       this.state.database
         .ref()
         .child("chatUser/" + this.state.room)
+        .orderByChild("name")
         .on("child_added", (snapshot) => {
           this.setState((state) => ({
             users: [...state.users, snapshot.val()],
@@ -275,6 +284,7 @@ class App extends Component {
     });
     e.preventDefault();
   };
+
   onButtonClicked = (e) => {
     if (!this.state.value.replace(/\s/g, "").length) {
     } else {
@@ -300,7 +310,14 @@ class App extends Component {
   onCopy = () => {
     this.setState({ copied: true });
   };
+
   componentDidMount() {
+    if ((this.state.room === "") | (this.state.name === "")) {
+      this.setState({
+        disable: true,
+      });
+    }
+
     console.log("mount" + this.state.room);
     firebase.initializeApp(config);
     this.setState({
@@ -308,8 +325,31 @@ class App extends Component {
     });
   }
 
+  search = (e) => {
+    this.setState({
+      search: e.target.value,
+    });
+  };
+
+  searchuser = (e) => {
+    this.setState({
+      searchuser: e.target.value,
+    });
+  };
   render() {
     const { classes } = this.props;
+
+    const filterRooms = this.state.rooms.filter((room) => {
+      return (
+        room.name.toUpperCase().search(this.state.search.toUpperCase()) != -1
+      );
+    });
+    const filterusers = this.state.users.filter((user) => {
+      return (
+        user.name.toUpperCase().search(this.state.searchuser.toUpperCase()) !=
+        -1
+      );
+    });
     console.log("render");
     return (
       <Grid
@@ -328,7 +368,13 @@ class App extends Component {
                     style={{ marginBottom: 20, overflowX: "hidden" }}
                     variant="h5"
                   >
-                    Active ChatRooms
+                    Active ChatRooms<br></br>
+                    <TextField
+                      marginBottom="0"
+                      className={classes.main}
+                      label="Search"
+                      onChange={this.search}
+                    />
                   </Typography>
                   <Paper
                     variant="outlined"
@@ -343,7 +389,7 @@ class App extends Component {
                       boxShadow: "none",
                     }}
                   >
-                    {this.state.rooms.map((room) => (
+                    {filterRooms.map((room) => (
                       <>
                         <center>
                           <CopyToClipboard
@@ -353,9 +399,11 @@ class App extends Component {
                             <Button
                               value={room.name}
                               text={room.name}
-                              // onClick={() =>
-                              //   navigator.clipboard.writeText(room.name)
-                              // }
+                              onClick={() =>
+                                this.setState({
+                                  copiedText: room.name,
+                                })
+                              }
                             >
                               <Card className={classes.main}>
                                 <CardHeader
@@ -368,7 +416,11 @@ class App extends Component {
                                     </IconButton>
                                   }
                                   title={room.name}
-                                  subheader={this.state.copied}
+                                  subheader={
+                                    this.state.copiedText === room.name
+                                      ? "copied"
+                                      : ""
+                                  }
                                 />
                               </Card>
                             </Button>
@@ -386,8 +438,10 @@ class App extends Component {
                     style={{ marginBottom: 20, overflowX: "hidden" }}
                     variant="h5"
                   >
-                    All Users
+                    All Users<br></br>
+                    <TextField label="Search" onChange={this.searchuser} />
                   </Typography>
+
                   <Paper
                     variant="outlined"
                     backgroundColor="primary"
@@ -401,7 +455,7 @@ class App extends Component {
                       boxShadow: "none",
                     }}
                   >
-                    {this.state.users.map((user) => (
+                    {filterusers.map((user) => (
                       <>
                         <center>
                           <Button value={user.name} text={user.name}>
@@ -425,7 +479,7 @@ class App extends Component {
                   </Paper>
                 </div>
               ) : (
-                <Grid></Grid>
+                <span></span>
               )}
             </Grid>
 
@@ -456,7 +510,7 @@ class App extends Component {
                     style={{
                       height: 400,
                       maxHeight: 500,
-                      width: 400,
+                      width: 350,
                       overflow: "auto",
                       boxShadow: "none",
                     }}
@@ -486,6 +540,7 @@ class App extends Component {
                   <form
                     className={classes.form}
                     noValidate
+                    width="300"
                     onSubmit={this.onButtonClicked}
                   >
                     <TextField
@@ -494,6 +549,11 @@ class App extends Component {
                       variant="outlined"
                       value={this.state.value}
                       fullWidth
+                      endAdornment={
+                        <InputAdornment position="end">
+                          <SearchIcon />
+                        </InputAdornment>
+                      }
                       onChange={(e) => {
                         this.setState({
                           value: e.target.value,
@@ -514,7 +574,7 @@ class App extends Component {
                   </form>
                 </div>
               ) : (
-                <div>
+                <>
                   <CssBaseline />
                   <div className={classes.paper}>
                     <Toolbar>
@@ -524,18 +584,29 @@ class App extends Component {
                         aria-label="menu"
                         onClick={this.getrooms}
                       >
-                        {this.state.isavail ? (
-                          <VisibilityIcon />
-                        ) : (
-                          <VisibilityOffIcon />
-                        )}
+                        <Grid container xs="12">
+                          <Grid
+                            item
+                            style={{ marginTop: 4, marginBottom: 0 }}
+                            justify="flex-start"
+                          >
+                            {this.state.isavail ? (
+                              <VisibilityOffIcon />
+                            ) : (
+                              <VisibilityIcon />
+                            )}
+                          </Grid>
+                          <Grid item justify="flex-end">
+                            <Typography variant="h5" style={{ marginLeft: 20 }}>
+                              {this.state.buttontext}
+                            </Typography>
+                          </Grid>
+                        </Grid>
                       </IconButton>
-                      <Typography variant="h6" className={classes.title}>
-                        {this.state.buttontext}
-                      </Typography>
                     </Toolbar>
                     <form className={classes.form} noValidate>
                       <TextField
+                        width="350"
                         variant="outlined"
                         margin="normal"
                         required
@@ -550,6 +621,16 @@ class App extends Component {
                         onChange={(e) => {
                           this.setState({ room: e.target.value.toUpperCase() });
                           this.value = this.state.room;
+                          if (this.value === "") {
+                            this.setState({
+                              disable: true,
+                            });
+                          } else {
+                            this.setState({
+                              disable: false,
+                            });
+                          }
+                          e.preventDefault();
                         }}
                       />
                       <TextField
@@ -564,15 +645,27 @@ class App extends Component {
                         value={this.state.name}
                         onChange={(e) => {
                           this.setState({ name: e.target.value.toUpperCase() });
+
                           this.value = this.state.name;
+                          if (this.value === "") {
+                            this.setState({
+                              disable: true,
+                            });
+                          } else {
+                            this.setState({
+                              disable: false,
+                            });
+                          }
                           e.preventDefault();
                         }}
                       />
 
                       <Button
                         type="submit"
+                        id="joinbtn"
                         maxWidth="500"
                         fullWidth
+                        disabled={this.state.disable}
                         variant="contained"
                         color="primary"
                         className={classes.submit}
@@ -591,7 +684,7 @@ class App extends Component {
                       </center>
                     </form>
                   </div>
-                </div>
+                </>
               )}
             </Grid>
           </Grid>
