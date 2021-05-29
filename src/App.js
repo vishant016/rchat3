@@ -23,6 +23,7 @@ import ArrowBackIosIcon from "@material-ui/icons/ArrowBackIos";
 import Toolbar from "@material-ui/core/Toolbar";
 import config from "./config";
 import { withStyles } from "@material-ui/core/styles";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 const useStyles = (theme) => ({
   paper: {
     marginTop: theme.spacing(8),
@@ -69,6 +70,7 @@ class App extends Component {
       timestamp: "",
       copiedText: "",
       usertext: "",
+      copied: false,
     };
     this.addClassroom = this.addClassroom.bind(this);
   }
@@ -196,7 +198,7 @@ class App extends Component {
         this.setState((state) => ({
           messages: [...state.messages, snapshot.val()],
         }));
-        console.log(snapshot.val());
+        console.log("msg " +snapshot.val());
       });
 
     //chatrooms add to state
@@ -295,6 +297,9 @@ class App extends Component {
     e.preventDefault();
   };
 
+  onCopy = () => {
+    this.setState({ copied: true });
+  };
   componentDidMount() {
     console.log("mount" + this.state.room);
     firebase.initializeApp(config);
@@ -341,27 +346,33 @@ class App extends Component {
                     {this.state.rooms.map((room) => (
                       <>
                         <center>
-                          <Button
-                            value={room.name}
+                          <CopyToClipboard
+                            onCopy={this.onCopy}
                             text={room.name}
-                            onClick={() =>
-                              navigator.clipboard.writeText(room.name)
-                            }
                           >
-                            <Card className={classes.main}>
-                              <CardHeader
-                                avatar={
-                                  <IconButton
-                                    className={classes.main}
-                                    aria-label="add"
-                                  >
-                                    <ForumIcon />
-                                  </IconButton>
-                                }
-                                title={room.name}
-                              />
-                            </Card>
-                          </Button>
+                            <Button
+                              value={room.name}
+                              text={room.name}
+                              // onClick={() =>
+                              //   navigator.clipboard.writeText(room.name)
+                              // }
+                            >
+                              <Card className={classes.main}>
+                                <CardHeader
+                                  avatar={
+                                    <IconButton
+                                      className={classes.main}
+                                      aria-label="add"
+                                    >
+                                      <ForumIcon />
+                                    </IconButton>
+                                  }
+                                  title={room.name}
+                                  subheader={this.state.copied}
+                                />
+                              </Card>
+                            </Button>
+                          </CopyToClipboard>
                         </center>
                       </>
                     ))}
