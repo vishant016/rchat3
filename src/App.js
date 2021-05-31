@@ -78,6 +78,10 @@ class App extends Component {
       disable: false,
       search: "",
       searchuser: "",
+      prevroom: "",
+      valid: true,
+      userexists: false,
+      roomexists: false,
     };
     this.addClassroom = this.addClassroom.bind(this);
   }
@@ -99,103 +103,138 @@ class App extends Component {
   // }
 
   usersubmit = (value) => {
-    this.state.database
-      .ref()
-      .child("chat")
-      .orderByChild("user")
-      .equalTo(this.state.name)
-      .once("value")
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          console.log("update" + this.state.room);
+    console.log(this.state.userexists + " FEFD" + this.state.roomexists);
 
-          this.client = new W3CWebSocket(
-            "ws://chatdjangoapp.herokuapp.com/ws/chatapp/" +
-              this.state.room +
-              "/"
-          );
-          this.client.onopen = () => {
-            console.log("WebSocket Client Connected update " + this.state.room);
-          };
-          this.setState({ isLoggedIn: true, isavail: false });
-        } else {
-          if (
-            (this.state.name.length < 4) |
-            (this.state.name.length > 8) |
-            this.state.name.includes(" ") |
-            (this.state.name === "") |
-            (this.state.room === "")
-          )
-            this.setState({ isLoggedIn: false });
-          else {
-            console.log("update" + this.state.room);
-            this.client = new W3CWebSocket(
-              "ws://chatdjangoapp.herokuapp.com/ws/chatapp/" +
-                this.state.room +
-                "/"
-            );
-            this.client.onopen = () => {
-              console.log(
-                "WebSocket Client Connected update " + this.state.room
-              );
-            };
-            this.setState({ isLoggedIn: true, isavail: false });
-
-            this.state.database.ref("chat").push({
-              user: this.state.name,
-            });
-          }
-        }
-      });
-
-    this.state.database
-      .ref()
-      .child("chatroom")
-      .orderByChild("name")
-      .equalTo(this.state.room)
-      .once("value")
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          console.log("exists chatroom");
-        } else {
-          if (
-            (this.state.room.length < 4) |
-            (this.state.room.length > 12) |
-            this.state.room.includes(" ") |
-            (this.state.room === "")
-          )
-            this.setState({ isLoggedIn: false });
-          else {
-            this.state.database.ref("chatroom").push({
-              name: this.state.room,
-            });
-            this.state.database
-              .ref("Messages")
-              .child(this.state.room)
-              .push({
-                name: "Admin",
-                message: "Welcome to  " + this.state.room,
-                timestamp: Date.toLocaleString(),
-              });
-            this.setState({ isLoggedIn: true, isavail: false });
-          }
-        }
-      });
-
-    this.state.database
-      .ref("chatUser/" + this.state.room)
-      .orderByChild("name")
-      .equalTo(this.state.name)
-      .once("value")
-      .then((snap) => {
-        if (snap.exists()) {
-          console.log("exists user in chatroom");
-        } else {
-          this.state.database.ref("chatUser/" + this.state.room).push({
-            name: this.state.name,
+    if (this.state.userexists && this.state.roomexists) {
+      console.log("exists both");
+      this.setState({ isLoggedIn: true, isavail: false });
+    } else if (
+      this.state.userexists == true &&
+      this.state.roomexists == false
+    ) {
+      if (
+        (this.state.room.length < 4) |
+        (this.state.room.length > 12) |
+        this.state.room.includes(" ") |
+        (this.state.room === "")
+      ) {
+        this.setState({
+          isLoggedIn: false,
+          isavail: false,
+          valid: false,
+        });
+      } else {
+        this.state.database.ref("chatroom").push({
+          name: this.state.room,
+        });
+        this.state.database
+          .ref("Messages")
+          .child(this.state.room)
+          .push({
+            name: "Admin",
+            message: "Welcome to  " + this.state.room,
+            timestamp: Date.toLocaleString(),
           });
-        }
-      });
+        this.state.database
+          .ref("chatUser/" + this.state.room)
+          .orderByChild("name")
+          .equalTo(this.state.name)
+          .once("value")
+          .then((snap) => {
+            if (snap.exists()) {
+              console.log("exists user in chatroom");
+            } else {
+              this.state.database.ref("chatUser/" + this.state.room).push({
+                name: this.state.name,
+              });
+            }
+          });
+        this.setState({ isLoggedIn: true, isavail: false });
+      }
+    } else if (
+      this.state.userexists == false &&
+      this.state.roomexists == true
+    ) {
+      if (
+        (this.state.name.length < 4) |
+        (this.state.name.length > 8) |
+        this.state.name.includes(" ") |
+        (this.state.name === "")
+      ) {
+        this.setState({
+          isLoggedIn: false,
+          isavail: false,
+          valid: false,
+        });
+      } else {
+        this.setState({ isLoggedIn: true, valid: true, isavail: false });
+
+        this.state.database.ref("chat").push({
+          user: this.state.name,
+        });
+        this.state.database
+          .ref("chatUser/" + this.state.room)
+          .orderByChild("name")
+          .equalTo(this.state.name)
+          .once("value")
+          .then((snap) => {
+            if (snap.exists()) {
+              console.log("exists user in chatroom");
+            } else {
+              this.state.database.ref("chatUser/" + this.state.room).push({
+                name: this.state.name,
+              });
+            }
+          });
+      }
+    } else {
+      if (
+        (this.state.room.length < 4) |
+        (this.state.room.length > 12) |
+        this.state.room.includes(" ") |
+        (this.state.room === "") |
+        (this.state.name.length < 4) |
+        (this.state.name.length > 8) |
+        this.state.name.includes(" ") |
+        (this.state.name === "")
+      ) {
+        this.setState({
+          isLoggedIn: false,
+          isavail: false,
+          valid: false,
+        });
+      } else {
+        this.state.database.ref("chat").push({
+          user: this.state.name,
+        });
+        this.state.database.ref("chatroom").push({
+          name: this.state.room,
+        });
+        this.state.database
+          .ref("Messages")
+          .child(this.state.room)
+          .push({
+            name: "Admin",
+            message: "Welcome to  " + this.state.room,
+            timestamp: Date.toLocaleString(),
+          });
+        this.state.database
+          .ref("chatUser/" + this.state.room)
+          .orderByChild("name")
+          .equalTo(this.state.name)
+          .once("value")
+          .then((snap) => {
+            if (snap.exists()) {
+              console.log("exists user in chatroom");
+            } else {
+              this.state.database.ref("chatUser/" + this.state.room).push({
+                name: this.state.name,
+              });
+            }
+          });
+        this.setState({ isLoggedIn: true, isavail: false });
+      }
+    }
 
     this.state.database
       .ref()
@@ -205,9 +244,8 @@ class App extends Component {
         this.setState((state) => ({
           messages: [...state.messages, snapshot.val()],
         }));
-        console.log("msg " + snapshot.val());
+        console.log(snapshot.val());
       });
-
     //chatrooms add to state
 
     value.preventDefault();
@@ -275,11 +313,16 @@ class App extends Component {
     this.setState({
       isLoggedIn: false,
       isusershown: false,
+      preroom: this.state.room,
       value: "",
       copiedText: "",
+      userexists: false,
+      roomexists: false,
+      
+      name: "",
       rooms: [],
       messages: [],
-      isavail: false,
+      
       buttontext: "Show Chatrooms",
     });
     e.preventDefault();
@@ -293,14 +336,14 @@ class App extends Component {
         message: this.state.value,
         timestamp: this.state.timestamp,
       });
-      this.client.send(
-        JSON.stringify({
-          type: "message",
-          message: this.state.value,
-          name: this.state.name,
-          timestamp: this.state.timestamp,
-        })
-      );
+      // this.client.send(
+      //   JSON.stringify({
+      //     type: "message",
+      //     message: this.state.value,
+      //     name: this.state.name,
+      //     timestamp: this.state.timestamp,
+      //   })
+      // );
     }
     this.setState({ value: "", isLoggedIn: true });
 
@@ -338,7 +381,16 @@ class App extends Component {
   };
   render() {
     const { classes } = this.props;
-
+    const uniqueMessages = [];
+    this.state.messages.map((item) => {
+      var findItem = uniqueMessages.find(
+        (x) =>
+          x.timestamp === item.timestamp &&
+          x.message === item.message &&
+          x.name === item.name
+      );
+      if (!findItem) uniqueMessages.push(item);
+    });
     const filterRooms = this.state.rooms.filter((room) => {
       return (
         room.name.toUpperCase().search(this.state.search.toUpperCase()) != -1
@@ -389,14 +441,16 @@ class App extends Component {
                       boxShadow: "none",
                     }}
                   >
-                    {filterRooms.map((room) => (
+                    {filterRooms.map((room, i) => (
                       <>
                         <center>
                           <CopyToClipboard
+                            key={i}
                             onCopy={this.onCopy}
                             text={room.name}
                           >
                             <Button
+                              key={i}
                               value={room.name}
                               text={room.name}
                               onClick={() =>
@@ -405,10 +459,12 @@ class App extends Component {
                                 })
                               }
                             >
-                              <Card className={classes.main}>
+                              <Card key={i} className={classes.main}>
                                 <CardHeader
+                                  key={i}
                                   avatar={
                                     <IconButton
+                                      key={i}
                                       className={classes.main}
                                       aria-label="add"
                                     >
@@ -455,14 +511,16 @@ class App extends Component {
                       boxShadow: "none",
                     }}
                   >
-                    {filterusers.map((user) => (
+                    {filterusers.map((user, i) => (
                       <>
                         <center>
-                          <Button value={user.name} text={user.name}>
-                            <Card className={classes.main}>
+                          <Button key={i} value={user.name} text={user.name}>
+                            <Card key={i} className={classes.main}>
                               <CardHeader
+                                key={i}
                                 avatar={
                                   <IconButton
+                                    key={i}
                                     className={classes.main}
                                     aria-label="add"
                                   >
@@ -516,12 +574,13 @@ class App extends Component {
                     }}
                   >
                     <ReactScrollbleFeed>
-                      {this.state.messages.map((message) => (
+                      {uniqueMessages.map((message, i) => (
                         <>
-                          <Card className={classes.root}>
+                          <Card key={i} className={classes.root}>
                             <CardHeader
+                              key={i}
                               avatar={
-                                <Avatar className={classes.avatar}>
+                                <Avatar key={i} className={classes.avatar}>
                                   {message.name[0]}
                                 </Avatar>
                               }
@@ -619,20 +678,59 @@ class App extends Component {
                         ref={this.chatElement}
                         value={this.state.room}
                         onChange={(e) => {
-                          this.setState({ room: e.target.value.toUpperCase() });
-                          this.value = this.state.room;
-                          if (this.value === "") {
+                          this.setState({
+                            room: e.target.value.toUpperCase(),
+                            roomexists: false,
+                          });
+                          //  this.state.value = this.state.room;
+                          if (this.state.room === "") {
                             this.setState({
                               disable: true,
+                              valid: false,
                             });
                           } else {
                             this.setState({
                               disable: false,
+                              valid: true,
                             });
                           }
+
+                          this.state.database
+                            .ref()
+                            .child("chatroom")
+                            .orderByChild("name")
+                            .equalTo(e.target.value.toUpperCase())
+                            .once("value")
+                            .then((snapshot) => {
+                              if (snapshot.exists()) {
+                                //  roomexists = true;
+                                this.setState({
+                                  roomexists: true,
+                                });
+                              }
+                            });
                           e.preventDefault();
                         }}
+                        onFocus={(e) => {
+                          if (this.state.database !== null) {
+                            this.state.database
+                              .ref()
+                              .child("chatroom")
+                              .orderByChild("name")
+                              .equalTo(this.state.room)
+                              .once("value")
+                              .then((snapshot) => {
+                                if (snapshot.exists()) {
+                                  //  roomexists = true;
+                                  this.setState({
+                                    roomexists: true,
+                                  });
+                                }
+                              });
+                          }
+                        }}
                       />
+
                       <TextField
                         variant="outlined"
                         margin="normal"
@@ -644,22 +742,62 @@ class App extends Component {
                         id="Username"
                         value={this.state.name}
                         onChange={(e) => {
-                          this.setState({ name: e.target.value.toUpperCase() });
+                          this.setState({
+                            name: e.target.value.toUpperCase(),
+                            userexists: false,
+                          });
 
-                          this.value = this.state.name;
-                          if (this.value === "") {
+                          // this.state.value = this.state.name;
+                          if (this.state.name === "") {
                             this.setState({
                               disable: true,
+                              valid: false,
                             });
                           } else {
                             this.setState({
                               disable: false,
+                              valid: true,
                             });
                           }
+
+                          this.state.database
+                            .ref()
+                            .child("chat")
+                            .orderByChild("user")
+                            .equalTo(e.target.value.toUpperCase())
+                            .once("value")
+                            .then((snapshot) => {
+                              if (snapshot.exists()) {
+                                // userexists = true;
+                                this.setState({
+                                  userexists: true,
+                                });
+                              }
+                            });
                           e.preventDefault();
                         }}
+                        onFocus={(e) => {
+                          if (this.state.database !== null) {
+                            this.state.database
+                              .ref()
+                              .child("chat")
+                              .orderByChild("user")
+                              .equalTo(this.state.name)
+                              .once("value")
+                              .then((snapshot) => {
+                                if (snapshot.exists()) {
+                                  // userexists = true;
+                                  this.setState({
+                                    userexists: true,
+                                  });
+                                }
+                              });
+                          }
+                        }}
                       />
-
+                      <span style={{ color: "red" }}>
+                        {this.state.valid ? "" : "Invalid  crendentials"}
+                      </span>
                       <Button
                         type="submit"
                         id="joinbtn"
