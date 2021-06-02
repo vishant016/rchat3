@@ -28,6 +28,10 @@ import Toolbar from "@material-ui/core/Toolbar";
 import config from "./config";
 import { withStyles } from "@material-ui/core/styles";
 import { CopyToClipboard } from "react-copy-to-clipboard";
+import Loader from "react-loader-spinner";
+import "react-loader-spinner/dist/loader/css/react-spinner-loader.css";
+import { Colorize } from "@material-ui/icons";
+
 const useStyles = (theme) => ({
   paper: {
     marginTop: theme.spacing(8),
@@ -107,6 +111,20 @@ class App extends Component {
 
     if (this.state.userexists && this.state.roomexists) {
       console.log("exists both");
+      this.state.database
+        .ref("chatUser/" + this.state.room)
+        .orderByChild("name")
+        .equalTo(this.state.name)
+        .once("value")
+        .then((snap) => {
+          if (snap.exists()) {
+            // console.log("exists user in chatroom");
+          } else {
+            this.state.database.ref("chatUser/" + this.state.room).push({
+              name: this.state.name,
+            });
+          }
+        });
       this.setState({ isLoggedIn: true, isavail: false });
     } else if (
       this.state.userexists == true &&
@@ -142,7 +160,7 @@ class App extends Component {
           .once("value")
           .then((snap) => {
             if (snap.exists()) {
-              console.log("exists user in chatroom");
+              // console.log("exists user in chatroom");
             } else {
               this.state.database.ref("chatUser/" + this.state.room).push({
                 name: this.state.name,
@@ -179,7 +197,7 @@ class App extends Component {
           .once("value")
           .then((snap) => {
             if (snap.exists()) {
-              console.log("exists user in chatroom");
+              // console.log("exists user in chatroom");
             } else {
               this.state.database.ref("chatUser/" + this.state.room).push({
                 name: this.state.name,
@@ -225,7 +243,7 @@ class App extends Component {
           .once("value")
           .then((snap) => {
             if (snap.exists()) {
-              console.log("exists user in chatroom");
+              // console.log("exists user in chatroom");
             } else {
               this.state.database.ref("chatUser/" + this.state.room).push({
                 name: this.state.name,
@@ -244,7 +262,7 @@ class App extends Component {
         this.setState((state) => ({
           messages: [...state.messages, snapshot.val()],
         }));
-        console.log(snapshot.val());
+        // console.log(snapshot.val());
       });
     //chatrooms add to state
 
@@ -284,7 +302,7 @@ class App extends Component {
   };
 
   showuser = (e) => {
-    console.log(e);
+    // console.log(e);
     if (!this.state.isusershown) {
       this.setState({
         isusershown: true,
@@ -318,11 +336,12 @@ class App extends Component {
       copiedText: "",
       userexists: false,
       roomexists: false,
-      
+
       name: "",
       rooms: [],
       messages: [],
-      
+      users: [],
+
       buttontext: "Show Chatrooms",
     });
     e.preventDefault();
@@ -361,7 +380,7 @@ class App extends Component {
       });
     }
 
-    console.log("mount" + this.state.room);
+    // console.log("mount" + this.state.room);
     firebase.initializeApp(config);
     this.setState({
       database: firebase.database(),
@@ -391,18 +410,24 @@ class App extends Component {
       );
       if (!findItem) uniqueMessages.push(item);
     });
+
+    const uniqueusers = [];
+    this.state.users.map((item) => {
+      var findItem = uniqueusers.find((x) => x.name === item.name);
+      if (!findItem) uniqueusers.push(item);
+    });
     const filterRooms = this.state.rooms.filter((room) => {
       return (
         room.name.toUpperCase().search(this.state.search.toUpperCase()) != -1
       );
     });
-    const filterusers = this.state.users.filter((user) => {
+    const filterusers = uniqueusers.filter((user) => {
       return (
         user.name.toUpperCase().search(this.state.searchuser.toUpperCase()) !=
         -1
       );
     });
-    console.log("render");
+    // console.log("render");
     return (
       <Grid
         Container
@@ -441,49 +466,59 @@ class App extends Component {
                       boxShadow: "none",
                     }}
                   >
-                    {filterRooms.map((room, i) => (
-                      <>
-                        <center>
-                          <CopyToClipboard
-                            key={i}
-                            onCopy={this.onCopy}
-                            text={room.name}
-                          >
-                            <Button
-                              key={i}
-                              value={room.name}
+                    {filterRooms.length === 0 ? (
+                      <Loader
+                        marginTop={50}
+                        type="Bars"
+                        color="grey"
+                        height={80}
+                        width={200}
+                        style={{ marginTop: 50, marginLeft: 30 }}
+                      />
+                    ) : (
+                      filterRooms.map((room, i) => (
+                        <>
+                          <center>
+                            <CopyToClipboard
+                              onCopy={this.onCopy}
                               text={room.name}
-                              onClick={() =>
-                                this.setState({
-                                  copiedText: room.name,
-                                })
-                              }
                             >
-                              <Card key={i} className={classes.main}>
-                                <CardHeader
-                                  key={i}
-                                  avatar={
-                                    <IconButton
-                                      key={i}
-                                      className={classes.main}
-                                      aria-label="add"
-                                    >
-                                      <ForumIcon />
-                                    </IconButton>
-                                  }
-                                  title={room.name}
-                                  subheader={
-                                    this.state.copiedText === room.name
-                                      ? "copied"
-                                      : ""
-                                  }
-                                />
-                              </Card>
-                            </Button>
-                          </CopyToClipboard>
-                        </center>
-                      </>
-                    ))}
+                              <Button
+                                style={{ width: 220 }}
+                                value={room.name}
+                                text={room.name}
+                                onClick={() =>
+                                  this.setState({
+                                    copiedText: room.name,
+                                  })
+                                }
+                              >
+                                <Card className={classes.main}>
+                                  <CardHeader
+                                    style={{ width: 220 }}
+                                    avatar={
+                                      <IconButton
+                                        className={classes.main}
+                                        aria-label="add"
+                                      >
+                                        <ForumIcon />
+                                      </IconButton>
+                                    }
+                                    title={room.name}
+                                    subheader={
+                                      this.state.copiedText === room.name
+                                        ? "copied"
+                                        : ""
+                                    }
+                                  />
+                                </Card>
+                              </Button>
+                            </CopyToClipboard>
+                          </center>
+                        </>
+                      ))
+                    )}
+                    {}
                   </Paper>
                   click on room name to copy on clipboard
                 </div>
@@ -506,34 +541,48 @@ class App extends Component {
                       height: 300,
                       maxHeight: 400,
                       width: 250,
-
+                      overflowX: "hidden",
                       overflow: "auto",
                       boxShadow: "none",
                     }}
                   >
-                    {filterusers.map((user, i) => (
-                      <>
-                        <center>
-                          <Button key={i} value={user.name} text={user.name}>
-                            <Card key={i} className={classes.main}>
-                              <CardHeader
-                                key={i}
-                                avatar={
-                                  <IconButton
-                                    key={i}
-                                    className={classes.main}
-                                    aria-label="add"
-                                  >
-                                    <PermIdentityIcon />
-                                  </IconButton>
-                                }
-                                title={user.name}
-                              />
-                            </Card>
-                          </Button>
-                        </center>
-                      </>
-                    ))}
+                    {filterusers.length === 0 ? (
+                      <Loader
+                        marginTop={50}
+                        type="Bars"
+                        color="grey"
+                        height={80}
+                        width={200}
+                        style={{ marginTop: 50, marginLeft: 30 }}
+                      />
+                    ) : (
+                      filterusers.map((user, i) => (
+                        <>
+                          <center>
+                            <Button
+                              value={user.name}
+                              text={user.name}
+                              style={{ width: 220 }}
+                            >
+                              <Card className={classes.main}>
+                                <CardHeader
+                                  style={{ width: 240 }}
+                                  avatar={
+                                    <IconButton
+                                      className={classes.main}
+                                      aria-label="add"
+                                    >
+                                      <PermIdentityIcon />
+                                    </IconButton>
+                                  }
+                                  title={user.name}
+                                />
+                              </Card>
+                            </Button>
+                          </center>
+                        </>
+                      ))
+                    )}
                   </Paper>
                 </div>
               ) : (
@@ -576,11 +625,10 @@ class App extends Component {
                     <ReactScrollbleFeed>
                       {uniqueMessages.map((message, i) => (
                         <>
-                          <Card key={i} className={classes.root}>
+                          <Card className={classes.root}>
                             <CardHeader
-                              key={i}
                               avatar={
-                                <Avatar key={i} className={classes.avatar}>
+                                <Avatar className={classes.avatar}>
                                   {message.name[0]}
                                 </Avatar>
                               }
