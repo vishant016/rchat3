@@ -139,6 +139,7 @@ class App extends Component {
           isLoggedIn: false,
           isavail: false,
           valid: false,
+          rooms: [],
         });
       } else {
         this.state.database.ref("chatroom").push({
@@ -182,6 +183,7 @@ class App extends Component {
           isLoggedIn: false,
           isavail: false,
           valid: false,
+          rooms: [],
         });
       } else {
         this.setState({ isLoggedIn: true, valid: true, isavail: false });
@@ -219,6 +221,7 @@ class App extends Component {
           isLoggedIn: false,
           isavail: false,
           valid: false,
+          rooms: [],
         });
       } else {
         this.state.database.ref("chat").push({
