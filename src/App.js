@@ -9,7 +9,7 @@ import VisibilityIcon from "@material-ui/icons/Visibility";
 import VisibilityOffIcon from "@material-ui/icons/VisibilityOff";
 import PersonIcon from "@material-ui/icons/Person";
 import ReactScrollbleFeed from "react-scrollable-feed";
-import { w3cwebsocket as W3CWebSocket } from "websocket";
+
 import firebase from "firebase/app";
 import "firebase/database";
 import AppBar from "@material-ui/core/AppBar";
@@ -30,7 +30,6 @@ import { withStyles } from "@material-ui/core/styles";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import Loader from "react-loader-spinner";
 import "react-loader-spinner/dist/loader/css/react-spinner-loader.css";
-import { Colorize } from "@material-ui/icons";
 
 const useStyles = (theme) => ({
   paper: {
@@ -127,8 +126,8 @@ class App extends Component {
         });
       this.setState({ isLoggedIn: true, isavail: false });
     } else if (
-      this.state.userexists == true &&
-      this.state.roomexists == false
+      this.state.userexists === true &&
+      this.state.roomexists === false
     ) {
       if (
         (this.state.room.length < 4) |
@@ -170,8 +169,8 @@ class App extends Component {
         this.setState({ isLoggedIn: true, isavail: false });
       }
     } else if (
-      this.state.userexists == false &&
-      this.state.roomexists == true
+      this.state.userexists === false &&
+      this.state.roomexists === true
     ) {
       if (
         (this.state.name.length < 4) |
@@ -409,21 +408,23 @@ class App extends Component {
           x.name === item.name
       );
       if (!findItem) uniqueMessages.push(item);
+      return true;
     });
 
     const uniqueusers = [];
     this.state.users.map((item) => {
       var findItem = uniqueusers.find((x) => x.name === item.name);
       if (!findItem) uniqueusers.push(item);
+      return true;
     });
     const filterRooms = this.state.rooms.filter((room) => {
       return (
-        room.name.toUpperCase().search(this.state.search.toUpperCase()) != -1
+        room.name.toUpperCase().search(this.state.search.toUpperCase()) !== -1
       );
     });
     const filterusers = uniqueusers.filter((user) => {
       return (
-        user.name.toUpperCase().search(this.state.searchuser.toUpperCase()) !=
+        user.name.toUpperCase().search(this.state.searchuser.toUpperCase()) !==
         -1
       );
     });
